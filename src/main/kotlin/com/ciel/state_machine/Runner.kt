@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component
 import org.springframework.boot.CommandLineRunner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.statemachine.StateMachine
+import org.springframework.statemachine.config.StateMachineFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.messaging.support.MessageBuilder
 import org.slf4j.LoggerFactory
@@ -12,8 +13,9 @@ import reactor.core.publisher.Flux
 import kotlin.with
 
 @Component
-class Runner(@Autowired val statemachine : StateMachine<States, Events>) : CommandLineRunner {
+class Runner(@Autowired val statemachineFactory : StateMachineFactory<States, Events>) : CommandLineRunner {
 		private val log = LoggerFactory.getLogger(this.javaClass)
+		val statemachine = statemachineFactory.getStateMachine()
     override fun run(vararg args: String?) {
 				statemachine.sendEvent(Mono.just(MessageBuilder.withPayload(Events.E1).build())).subscribe()
 				statemachine.sendEvent(Mono.just(MessageBuilder.withPayload(Events.E2).build())).subscribe()

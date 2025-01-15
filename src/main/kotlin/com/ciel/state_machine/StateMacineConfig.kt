@@ -10,6 +10,8 @@ import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer
+import org.springframework.statemachine.config.EnableStateMachineFactory
+import org.springframework.statemachine.guard.Guard
 import org.springframework.statemachine.listener.StateMachineListener
 import org.springframework.statemachine.listener.StateMachineListenerAdapter
 import org.springframework.statemachine.state.State
@@ -27,7 +29,7 @@ enum class Events {
 }
 
 @Configuration
-@EnableStateMachine
+@EnableStateMachineFactory
 class StaticMachineConfig : EnumStateMachineConfigurerAdapter<States, Events>() {
   private val log = LoggerFactory.getLogger(StaticMachineConfig::class.java)
   @Throws(Exception::class)
@@ -42,6 +44,7 @@ class StaticMachineConfig : EnumStateMachineConfigurerAdapter<States, Events>() 
   override fun configure(transitions: StateMachineTransitionConfigurer<States, Events>) {
     transitions
             .withExternal()
+            .guard(simpleGuard())
             .source(States.S1)
             .target(States.S1)
             .event(Events.E1)
@@ -84,17 +87,24 @@ class StaticMachineConfig : EnumStateMachineConfigurerAdapter<States, Events>() 
   fun executeAction(): Action<States, Events> {
     return Action { context ->
       log.info("Action executed ${context.target.id}")
-	    var state = context.stateMachine.state
-			if (state != null) {
-				log.info("Current state ${state.id}")
-			} else {
-				log.info("Current state is null")
-			}
-			var approvals: Int = context.extendedState.variables["approvals"] as Int? ?:  0
-			approvals++
-			context.extendedState.variables["approvals"] = approvals
-			log.info("Approvals: $approvals")
-			context
+      var state = context.stateMachine.state
+      if (state != null) {
+        log.info("Current state ${state.id}")
+      } else {
+        log.info("Current state is null")
+      }
+      var approvals: Int = context.extendedState.variables["approvals"] as Int? ?: 0
+      approvals++
+      context.extendedState.variables["approvals"] = approvals
+      log.info("Approvals: $approvals")
+      context
+    }
+  }
+  @Bean
+  fun simpleGuard(): Guard<States, Events> {
+    return Guard { context ->
+      val approvals: Int = context.extendedState.variables["approvals"] as Int? ?: 0
+      approvals > 2
     }
   }
 }
